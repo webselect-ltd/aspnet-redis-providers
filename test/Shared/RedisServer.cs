@@ -7,6 +7,9 @@ using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
+using Xunit;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Microsoft.Web.Redis.FunctionalTests
 {
