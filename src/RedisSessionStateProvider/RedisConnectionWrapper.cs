@@ -14,6 +14,7 @@ namespace Microsoft.Web.Redis
     {
         internal static RedisSharedConnection sharedConnection;
         private static object lockForSharedConnection = new object();
+        internal static ISerializer serializer = new DefaultSerializer();
 
         public KeyGenerator Keys { set; get; }
 
@@ -33,10 +34,21 @@ namespace Microsoft.Web.Redis
                     if (sharedConnection == null)
                     {
                         sharedConnection = new RedisSharedConnection(configuration);
+
+                        string serializerTypeName = configuration.RedisSerializerType;
+
+                        if (!string.IsNullOrWhiteSpace(serializerTypeName))
+                        {
+                            var serializerType = Type.GetType(serializerTypeName, true);
+                            if (serializerType != null)
+                            {
+                                serializer = (ISerializer)Activator.CreateInstance(serializerType);
+                            }
+                        }
                     }
                 }
             }
-            redisConnection = new StackExchangeClientConnection(configuration, sharedConnection);
+            redisConnection = new StackExchangeClientConnection(configuration, sharedConnection, serializer);
         }
 
         public TimeSpan GetLockAge(object lockId)
@@ -123,11 +135,7 @@ namespace Microsoft.Web.Redis
 
         private byte[] SerializeSessionStateItemCollection(ISessionStateItemCollection sessionStateItemCollection)
         {
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter writer = new BinaryWriter(ms);
-            ((SessionStateItemCollection)sessionStateItemCollection).Serialize(writer);
-            writer.Close();
-            return ms.ToArray();
+            return serializer.SerializeSessionStateItemCollection((SessionStateItemCollection)sessionStateItemCollection);
         }
 
         public void Set(ISessionStateItemCollection data, int sessionTimeout)

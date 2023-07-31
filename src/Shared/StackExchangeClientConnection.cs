@@ -15,11 +15,13 @@ namespace Microsoft.Web.Redis
     {
         private ProviderConfiguration _configuration;
         private RedisSharedConnection _sharedConnection;
+        private ISerializer _serializer;
 
-        public StackExchangeClientConnection(ProviderConfiguration configuration, RedisSharedConnection sharedConnection)
+        public StackExchangeClientConnection(ProviderConfiguration configuration, RedisSharedConnection sharedConnection, ISerializer serializer)
         {
             _configuration = configuration;
             _sharedConnection = sharedConnection;
+            _serializer = serializer;
         }
 
         // This is used just by tests
@@ -186,9 +188,7 @@ namespace Microsoft.Web.Redis
 
         private SessionStateItemCollection DeserializeSessionStateItemCollection(RedisResult serializedSessionStateItemCollection)
         {
-            MemoryStream ms = new MemoryStream((byte[])serializedSessionStateItemCollection);
-            BinaryReader reader = new BinaryReader(ms);
-            return SessionStateItemCollection.Deserialize(reader);
+            return _serializer.DeserializeSessionStateItemCollection((byte[])serializedSessionStateItemCollection);
         }
 
         public void Set(string key, byte[] data, DateTime utcExpiry)

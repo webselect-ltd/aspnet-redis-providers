@@ -55,7 +55,7 @@ namespace Microsoft.Web.Redis.FunctionalTests
         private StackExchangeClientConnection GetStackExchangeClientConnection(ProviderConfiguration configuration)
         {
             var sharedConnection = new RedisSharedConnection(configuration);
-            return new StackExchangeClientConnection(configuration, sharedConnection);
+            return new StackExchangeClientConnection(configuration, sharedConnection, new DefaultSerializer());
         }
     }
 }

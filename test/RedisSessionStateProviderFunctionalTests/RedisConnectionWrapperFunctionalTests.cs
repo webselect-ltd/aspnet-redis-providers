@@ -27,6 +27,7 @@ namespace Microsoft.Web.Redis.FunctionalTests
             uniqueSessionNumber++;
             // Initial connection with redis
             RedisConnectionWrapper.sharedConnection = null;
+            RedisConnectionWrapper.serializer = new DefaultSerializer();
             RedisConnectionWrapper redisConn = new RedisConnectionWrapper(pc, id);
             return redisConn;
         }
@@ -43,6 +44,7 @@ namespace Microsoft.Web.Redis.FunctionalTests
             ProviderConfiguration pc = Utility.GetDefaultConfigUtility();
             pc.ApplicationName = "APPTEST";
             pc.Port = 6379;
+            pc.RedisSerializerType = "Microsoft.Web.Redis.Tests.TestSerializer, Microsoft.Web.RedisSessionStateProvider.Functional.Tests";
 
             using (RedisServer redisServer = new RedisServer())
             {
@@ -58,10 +60,8 @@ namespace Microsoft.Web.Redis.FunctionalTests
                 IDatabase actualConnection = GetRealRedisConnection(redisConn);
 
                 RedisValue sessionDataFromRedis = actualConnection.StringGet(redisConn.Keys.DataKey);
-                SessionStateItemCollection dataFromRedis = null;
-                MemoryStream ms = new MemoryStream(sessionDataFromRedis);
-                BinaryReader reader = new BinaryReader(ms);
-                dataFromRedis = SessionStateItemCollection.Deserialize(reader);
+
+                SessionStateItemCollection dataFromRedis = new TestSerializer().DeserializeSessionStateItemCollection(sessionDataFromRedis);
 
                 Assert.Equal("value", dataFromRedis["key"]);
                 Assert.Equal("value1", dataFromRedis["key1"]);
