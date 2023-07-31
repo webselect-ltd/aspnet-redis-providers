@@ -13,6 +13,7 @@ namespace Microsoft.Web.Redis
     {
         internal static RedisSharedConnection sharedConnection;
         private static object lockForSharedConnection = new object();
+        internal static ISerializer serializer = new DefaultSerializer();
 
         internal IRedisClientConnection redisConnection;
         private ProviderConfiguration configuration;
@@ -29,10 +30,21 @@ namespace Microsoft.Web.Redis
                     if (sharedConnection == null)
                     {
                         sharedConnection = new RedisSharedConnection(configuration);
+
+                        string serializerTypeName = configuration.RedisSerializerType;
+
+                        if (!string.IsNullOrWhiteSpace(serializerTypeName))
+                        {
+                            var serializerType = Type.GetType(serializerTypeName, true);
+                            if (serializerType != null)
+                            {
+                                serializer = (ISerializer)Activator.CreateInstance(serializerType);
+                            }
+                        }
                     }
                 }
             }
-            redisConnection = new StackExchangeClientConnection(configuration, sharedConnection);
+            redisConnection = new StackExchangeClientConnection(configuration, sharedConnection, serializer);
         }
 
         /*-------Start of Add operation-----------------------------------------------------------------------------------------------------------------------------------------------*/
